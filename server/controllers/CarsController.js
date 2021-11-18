@@ -1,4 +1,5 @@
 import { Auth0Provider } from '@bcwdev/auth0provider'
+import { bidsService } from '../services/BidsService'
 import { carsService } from '../services/CarsService'
 import BaseController from '../utils/BaseController'
 
@@ -8,8 +9,7 @@ export class CarsController extends BaseController {
     this.router
       .get('', this.getAll)
       .get('/:id', this.getById)
-      // you cant do this unless you are logged in
-      // GateKeeper: All things beyond this point must be logged in
+      .get('/:id/bids', this.getCarBids)
       .use(Auth0Provider.getAuthorizedUserInfo)
       .post('', this.create)
       .put('/:id', this.edit)
@@ -37,10 +37,17 @@ export class CarsController extends BaseController {
     }
   }
 
+  async getCarBids(req, res, next) {
+    try {
+      const bids = await bidsService.getBidsByCarId(req.params.id)
+      return res.send(bids)
+    } catch (error) {
+      next(error)
+    }
+  }
+
   async create(req, res, next) {
     try {
-      // NEVER TRUST THE CLIENT TO TELL YOU WHO THEY ARE
-      // req.userInfo is the creds validated by auth0 token
       req.body.creatorId = req.userInfo.id
       const car = await carsService.create(req.body)
       return res.send(car)
